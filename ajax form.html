@@ -1,0 +1,98 @@
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    const dupleCheck = document.getElementById('dupleCheck');
+    const joinBtn = document.querySelector('#joinBtn');
+    joinBtn.disabled = true;
+    const mb_id = document.querySelector("#mb_id");
+    const pasd = document.querySelector('#pswd');
+    const pswdCk = document.querySelector('#pswdCk');
+    const name = document.querySelector('#name');
+    const email = document.querySelector('#email');
+    const id_pattern = /^[a-z0-9][a-z0-9_\-]{4,19}$/;
+    const pw_pattern = /^[A-Za-z0-9`\-=\\\[\];',\./~!@#\$%\^&\*\(\)_\+|\{\}:"<>\?]{8,16}$/;
+    let message = '';
+
+    //8자 이상 16자 이하의 영문 대소문자, 숫자, 특수 문자
+
+    let validateId = (mb_id) => {
+      return id_pattern.test(mb_id);
+    }
+
+    const duplication = async () => {
+      let pass_id = validateId(mb_id.value);
+
+      if(pass_id){
+        try {
+        const result = await $.ajax('/member/dupliCheck', {
+          method: 'GET',
+          data: {
+            mb_id: mb_id.value
+          },
+        });
+        if (result == '0') {
+          message = '사용할 수 있는 아이디 입니다.';
+          joinBtn.disabled = false;
+        } else if (result == '1') {
+          message = '이미 존재하는 아이디 입니다.';
+          mb_id.value = '';
+          mb_id.focus();
+        } else {
+          message = '아이디를 입력해주세요.';
+        }
+        alert(message);
+        return result;
+      } catch (error) {
+        console.error(error);
+      }
+      }else{
+        alert('아이디는 영소문자(a-z) 또는 숫자(0-9)로 시작하고, 그 뒤에 영소문자(a-z), 숫자(0-9), 밑줄(_), 또는 하이픈(-)을 포함하여 총 4자 이상 19자 이하여야 합니다.');
+      }
+      
+    }
+
+    let validate_pswd = (pswd) =>{
+      return pw_pattern.test(pswd);
+    }
+
+    const check_join = async () => {
+      let pswd1 = validate_pswd(pswd.value);
+      let pswd2 = validate_pswd(pswdCk.value);
+
+      if(pswd1==true && pswd2==true){
+
+        const member = {
+        mb_id: mb_id.value,
+        pswd: pswd.value,
+        pswdCk: pswdCk.value,
+        name: name.value,
+        email: email.value,
+        };
+        if(pswd.value == '' || pswdCk.value==''){
+          alert('비밀번호를 입력해주세요');
+        }else{
+
+          let result = await $.ajax('/member/check_join_member', {
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(member),
+          });
+          if(result=='1'){
+            alert('회원가입이 완료되었습니다.');
+            window.location.href ='/home/login_index';
+          }else{
+            alert('비밀번호가 일치하지 않습니다.');
+          }
+        }
+      }else{
+        alert('8자 이상 16자 이하의 영문 대소문자, 숫자, 특수 문자 비밀번호를 사용해주세요');
+      }
+    }
+
+  
+    dupleCheck.addEventListener("click", duplication);
+    joinBtn.addEventListener('click', check_join);
+
+    //data는 기본적으로 객체를 직렬화하여 queryString형태로 변환하여 전송함. 본문에 데이터를 전송하려면 contentType: 'application/json'으로 
+          //설정하고 data에 직렬화된 JSON문자열을 전달해야함.
+  </script>
