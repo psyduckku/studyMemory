@@ -1,0 +1,100 @@
+
+//권한부여 명단 선택
+const check_box_list = document.querySelectorAll(".chk_content");
+let cp_no='';
+let cp_code='';
+
+// const array_check_box = Array.from(check_box);
+check_box_list.forEach((checkBox)=>{
+  checkBox.addEventListener('click', ()=>{
+    cp_no = checkBox.value;
+  })
+})
+
+//권한부여 모달
+const btn_authorizeToMember = document.getElementById('btn_authorizeToMember');
+const modalForAuthorizing = document.getElementById('modalForAuthorizing');
+const auth_closeBtn = modalForAuthorizing.querySelector('.auth_close');
+
+
+
+// 모달 열기 버튼 클릭 시 이벤트 핸들러
+btn_authorizeToMember.addEventListener('click', function() {
+  modalForAuthorizing.style.display = 'block';
+  $.ajax({
+    url: '/ksealmsadmin/lecture/getMemberListBelongToCp_name',
+    data: {cp_no : cp_no},
+    method: 'GET',
+    success(data){
+    const member_list = JSON.parse(data);
+    member_list.forEach((list)=>{
+      //ajax로 추가할 tbody
+        let tbody = document.querySelector('#member_list_by_dept');
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td');
+        const td2 = document.createElement('td');
+        const input = document.createElement('input');
+        input.setAttribute('type', 'checkbox');
+        input.setAttribute('id', 'mem_input');
+        input.value = list.mb_id;
+        td2.appendChild(input);
+        td1.textContent = list.mb_id;
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tbody.appendChild(tr);
+    })}
+    , error(error){
+      console.log(error);
+    }
+  })
+});
+
+// 모달 닫기 버튼 클릭 시 이벤트 핸들러
+auth_closeBtn.addEventListener('click', function() {
+  modalForAuthorizing.style.display = 'none';
+});
+
+// 모달 외부를 클릭하여 닫기
+window.addEventListener('click', function(event) {
+  if (event.target === modalForAuthorizing) {
+    modalForAuthorizing.style.display = 'none';
+  }
+});
+//권한부여 모달끝
+
+//컨트롤러
+    public function getMemberListBelongToCp_name(){
+      $cp_no = $_GET['cp_no'];
+      $company_model = new CompanyModel();
+      $member_model = new MemberModel();
+      $result = $company_model->getCp_code($cp_no);
+      if($result){
+        $cp_name = $result[0]->cp_name;
+        $cp_name_list = $member_model->getMemberByCp_name($cp_name);
+        echo json_encode($cp_name_list);
+      }else{
+        '0';
+      }
+    }
+
+
+
+//model
+    public function getCp_code($cp_no){
+      $db     = \Config\Database::connect();
+      $builder = $db->table($this->table); 
+      $builder->where('cp_no', $cp_no);
+      $query = $builder->get();
+      return $query->getResult();
+    }
+
+    public function getMemberByCp_name($cp_name) {
+      $db      = \Config\Database::connect();
+      $builder = $db->table($this->table);      
+      $builder->where('mb_authority', 'member');
+      $builder->like('mb_cp_name', $cp_name);
+      $query = $builder->get();
+      return $query->getResult(); 
+  }
+
+
